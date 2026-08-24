@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import make_pipeline
 
+from generate_L_curves import generate_learning_curve
+
 X_train = pd.read_csv("../data/X_train_processed.csv")
 y_train = pd.read_csv("../data/y_train.csv").squeeze()
 
@@ -32,10 +34,14 @@ pipeline.fit(X_train, y_train)
 print("Training completed.")
 
 
-
 # Save model + feature columns
 os.makedirs("../results/model", exist_ok=True)
-
+generate_learning_curve(
+    pipeline,
+    X_train,
+    y_train,
+    "../results/model/learning_curve.png"
+)
 joblib.dump(pipeline,"../results/model/random_forest.pkl")
 
 print("Model saved.")
