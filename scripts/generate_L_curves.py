@@ -1,12 +1,80 @@
 import os
 import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 from sklearn.base import clone
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score
 
 
-def generate_learning_curve(model, X, y, output_path):
+
+def plot_learning_curve(model, output_path):
+
+    results = model.evals_result()
+
+    train_auc = results["validation_0"]["auc"]
+    val_auc = results["validation_1"]["auc"]
+
+    rounds = range(1, len(train_auc) + 1)
+
+    best_iteration = model.best_iteration
+    best_auc = model.best_score
+
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        rounds,
+        train_auc,
+        label="Training AUC"
+    )
+
+    plt.plot(
+        rounds,
+        val_auc,
+        label="Validation AUC"
+    )
+
+    # Best iteration / early stopping point
+    plt.axvline(
+        x=best_iteration + 1,
+        linestyle="--",
+        label=f"Best iteration ({best_iteration + 1})"
+    )
+
+    plt.scatter(
+        best_iteration + 1,
+        best_auc,
+        zorder=5,
+        label=f"Best validation AUC ({best_auc:.4f})"
+    )
+
+    plt.xlabel("Boosting Round")
+    plt.ylabel("ROC AUC")
+    plt.title("XGBoost Learning Curve")
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+    print(f"Learning curve saved to: {output_path}")
+    print(f"Best iteration: {best_iteration + 1}")
+    print(f"Best validation AUC: {best_auc:.4f}")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+def learning_curve_asDataGrows(model, X, y, output_path):
 
     cv = StratifiedKFold(n_splits=3,shuffle=True,random_state=42)
 
