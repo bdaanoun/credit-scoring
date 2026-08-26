@@ -6,6 +6,8 @@ X_train, X_test, y_train, y_test = load_and_split_data("../data/application_trai
 X_train = add_features(X_train)
 X_test = add_features(X_test)
 X_train, X_test = handle_missing_values(X_train,X_test)
+# for col in X_train.columns:
+#     print(f"{col}")
 
 X_train.to_csv("../data/X_train_processed.csv", index=False)
 X_test.to_csv("../data/X_test_processed.csv", index=False)

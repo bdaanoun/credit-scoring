@@ -10,11 +10,16 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from generate_L_curves import  plot_learning_curve
 from feature_importance import plot_feature_importance
+from sklearn.metrics import roc_auc_score,average_precision_score
 
 X_train = pd.read_csv("../data/X_train_processed.csv")
 y_train = pd.read_csv("../data/y_train.csv").squeeze()
 
+X_test = pd.read_csv("../data/X_test_processed.csv")
+y_test = pd.read_csv("../data/y_test.csv").squeeze()
+
 print(f"X_train shape: {X_train.shape}")
+print(f"X_test shape: {X_test.shape}")
 
 
 X_train, X_val, y_train, y_val = train_test_split(
@@ -64,6 +69,7 @@ model.fit(
 )
 
 print("Training completed.")
+
 os.makedirs("../results/model", exist_ok=True)
 
 plot_feature_importance(
@@ -78,8 +84,7 @@ plot_learning_curve(
 )
 
 
-# Save model + feature columns
-
+# Save model + preprocessor 
 model_data = {"preprocessor": preprocessor,"model": model}
 joblib.dump(model_data,"../results/model/xgboost.pkl")
 
