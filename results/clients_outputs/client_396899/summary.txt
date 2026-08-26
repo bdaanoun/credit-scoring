@@ -1,0 +1,7 @@
+Client ID: 396899
+Split: test
+Description: test_client
+Default probability: 36.15%
+Predicted target (threshold 0.5): 0
+Actual target: 0
+Prediction: correct

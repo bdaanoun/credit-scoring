@@ -1,11 +1,14 @@
 import os
 import joblib
+from matplotlib import pyplot as plt
 import pandas as pd
 from sklearn.compose import make_column_transformer, make_column_selector
 from sklearn.preprocessing import OneHotEncoder
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from generate_L_curves import  plot_learning_curve
+from feature_importance import plot_feature_importance
+from sklearn.metrics import roc_auc_score,average_precision_score
 
 X_train = pd.read_csv("../data/X_train_processed.csv")
 y_train = pd.read_csv("../data/y_train.csv").squeeze()
@@ -28,6 +31,7 @@ preprocessor = make_column_transformer((
         make_column_selector(dtype_include=["object", "category"])),
     remainder="passthrough"
 )
+
 
 X_train_encoded = preprocessor.fit_transform(X_train)
 X_val_encoded = preprocessor.transform(X_val)
@@ -54,26 +58,18 @@ model = XGBClassifier(
 model.fit(X_train_encoded,y_train , eval_set=[(X_train_encoded, y_train), (X_val_encoded, y_val)],verbose=True)
 print("Training completed.")
 
-#feature importance
-
-feature_names = preprocessor.get_feature_names_out()
-
-importance = pd.DataFrame({
-    "feature": feature_names,
-    "importance": model.feature_importances_})
-
-importance = importance.sort_values("importance",ascending=False)
 os.makedirs("../results/model", exist_ok=True)
-importance.to_csv("../results/model/feature_importance.csv",index=False)
 
-print(importance.head(30))
+plot_feature_importance(
+    model,
+    preprocessor,
+    "../results/model/feature_importance.png"
+)
 
 plot_learning_curve(model,"../results/model/learning_curve.png")
 
 
-# Save model + feature columns
-os.makedirs("../results/model", exist_ok=True)
-
+# Save model + preprocessor 
 model_data = {"preprocessor": preprocessor,"model": model}
 joblib.dump(model_data,"../results/model/xgboost.pkl")
 

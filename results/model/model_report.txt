@@ -1,49 +1,63 @@
-Overfitting Prevention and Training Stopping Strategy
-======================================================
+MODEL REPORT
+============
 
-To reduce the risk of overfitting, the XGBoost model uses several
-regularization techniques and early stopping.
+ALGORITHM
+=========
+We used XGBoost, a gradient boosting algorithm based on decision trees,
+to predict the probability of loan default.
 
-First, the maximum tree depth is limited to 5 using max_depth=5.
-Limiting tree depth prevents individual trees from becoming overly
-complex and memorizing the training data.
+We chose XGBoost because it works well with tabular data and can capture
+non-linear relationships between the features.
 
-The min_child_weight parameter is set to 3. This prevents the model
-from creating overly specific branches based on nodes with insufficient
-information, which helps reduce model complexity.
+We used max_depth=5, min_child_weight=3, subsample=0.8,
+colsample_bytree=0.8, and learning_rate=0.05 to control model complexity
+and improve generalization.
 
-Subsampling is also used. The parameter subsample=0.8 means that each
-boosting round uses approximately 80% of the training observations.
-Similarly, colsample_bytree=0.8 means that each tree uses approximately
-80% of the available features. These sources of randomness help reduce
-the model's dependence on specific observations or features and improve
-generalization.
 
-The learning rate is set to 0.05. A relatively small learning rate
-makes each new tree contribute only a small correction to the existing
-model. This allows the model to learn progressively rather than making
-large changes in a single boosting round.
+WHY ACCURACY SHOULDN'T BE USED
+===============================
+We did not use accuracy as our main metric because the dataset is
+imbalanced. There are significantly more clients who do not default
+than clients who do.
 
-Early stopping is also used with early_stopping_rounds=50. During
-training, ROC AUC is calculated on both the training and validation
-sets after every boosting round. The validation AUC is used to monitor
-generalization performance.
+A model could therefore achieve high accuracy by mostly predicting the
+majority class while failing to identify clients who default.
 
-The learning curve shows that training AUC continues to increase as
-more boosting rounds are added, while validation AUC eventually
-reaches a plateau. After the best validation AUC is reached, additional
-boosting rounds improve the training AUC without improving validation
-AUC. This indicates that the model is beginning to overfit the training
-data.
+We used ROC AUC instead because it measures how well the model
+distinguishes between clients who default and those who do not,
+independently of a single classification threshold.
 
-Therefore, the best iteration is selected based on the highest
-validation AUC rather than the highest training AUC. Training is
-stopped after 50 consecutive boosting rounds without an improvement in
-validation AUC. This prevents unnecessary additional training and
-limits the model from continuing to learn patterns that do not
-generalize to unseen data.
 
-The final stopping point is therefore justified by the learning curve:
-the validation AUC has stopped improving, while the training AUC
-continues to increase, providing evidence that further training would
-primarily increase overfitting rather than improve generalization.
+OVERFITTING PREVENTION AND TRAINING STOPPING STRATEGY
+=====================================================
+We used several techniques to reduce overfitting:
+
+- max_depth=5 limits tree complexity.
+- min_child_weight=3 prevents overly specific branches.
+- subsample=0.8 and colsample_bytree=0.8 add randomness during training.
+- learning_rate=0.05 makes the model learn progressively.
+- early_stopping_rounds=50 stops training when validation AUC no longer
+  improves.
+
+From the learning curve, we observed that training AUC continued to
+increase while validation AUC eventually stopped improving. This
+indicated that continuing to train would mainly increase overfitting.
+
+We therefore selected the best iteration based on validation AUC and
+stopped training after 50 rounds without improvement.
+
+
+LIMITATIONS AND POSSIBLE IMPROVEMENTS
+=====================================
+We faced a few limitations during the project. The main one is that the
+model's AUC is relatively close to the required threshold, so its
+predictive performance could be improved.
+
+Possible improvements include:
+
+- Better feature engineering using more information from the datasets.
+- More extensive hyperparameter tuning.
+- Better handling of class imbalance.
+- Comparing XGBoost with other models such as Logistic Regression or
+  Random Forest.
+- Using SHAP to improve the interpretability of individual predictions.
