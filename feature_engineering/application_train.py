@@ -1,63 +1,8 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import numpy as np
-import pandas as pd
 
-
-def load_and_split_data(path):
-    df = pd.read_csv(path)
-    X = df.drop(columns=["TARGET"])
-    y = df["TARGET"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.20,
-        stratify=y,
-        random_state=42
-    )
-
-    return X_train, X_test, y_train, y_test
-
-def handle_missing_values(X_train, X_test):
-
-    X_train = X_train.copy()
-    X_test = X_test.copy()
-
-    # 365243 kat3ni DAYS_EMPLOYED is unknown
-    if "DAYS_EMPLOYED" in X_train.columns:
-        train_anomaly = X_train["DAYS_EMPLOYED"] == 365243
-        test_anomaly = X_test["DAYS_EMPLOYED"] == 365243
-        
-        X_train["DAYS_EMPLOYED_ANOM"] = train_anomaly.astype(int)
-        X_test["DAYS_EMPLOYED_ANOM"] = test_anomaly.astype(int)
-
-        X_train.loc[train_anomaly, "DAYS_EMPLOYED"] = np.nan
-        X_test.loc[test_anomaly, "DAYS_EMPLOYED"] = np.nan
-
-
-    numerical_columns = X_train.select_dtypes(include=["number"]).columns
-    categorical_columns = X_train.select_dtypes(include=["object", "category"]).columns
-
-    #Numerical columns
-    for column in numerical_columns:
-        if X_train[column].isnull().any():
-            X_train[f"{column}_MISSING"] = (X_train[column].isnull().astype(int))
-            X_test[f"{column}_MISSING"] = (X_test[column].isnull().astype(int))
-
-        median = X_train[column].median()
-
-        X_train[column] = X_train[column].fillna(median)
-        X_test[column] = X_test[column].fillna(median)
-
-    #Categorical columns
-    for column in categorical_columns:
-        X_train[column] = X_train[column].fillna("Missing")
-        X_test[column] = X_test[column].fillna("Missing")
-
-    return X_train, X_test   
-    
-def add_features(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
+def application_features():
+    df = pd.read_csv("../data/application_train.csv")
 
     # DAYS_BIRTH is negative: convert to years
     df["AGE_YEARS"] = (-df["DAYS_BIRTH"]) / 365.25
@@ -66,7 +11,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["EMPLOYED_YEARS"] = np.where(df["DAYS_EMPLOYED"] == 365243, np.nan , (-df["DAYS_EMPLOYED"]) / 365.25)
 
     # Flag the special DAYS_EMPLOYED value
-    # df["FLAG_EMPLOYED_ANOMALY"] = (df["DAYS_EMPLOYED"] == 365243).astype("int8")
+    df["FLAG_EMPLOYED_ANOMALY"] = (df["DAYS_EMPLOYED"] == 365243).astype("int8")
 
     # Convert other DAYS variables to positive years
     df["ID_PUBLISH_YEARS"] = (-df["DAYS_ID_PUBLISH"]) / 365.25
@@ -104,9 +49,6 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Income per child
     df["INCOME_PER_CHILD"] = (df["AMT_INCOME_TOTAL"] /(df["CNT_CHILDREN"] + 1))
-
-
-    # 3. AGE / EMPLOYMENT RELATIONSHIPS
     
     # Using positive years makes interpretation easier
     df["EMPLOYED_AGE_RATIO"] = (df["EMPLOYED_YEARS"] /df["AGE_YEARS"])#.replace(0, np.nan)
@@ -178,7 +120,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
         df["TOTAL_CONTACT_FLAGS"] = (df[existing_phone].sum(axis=1))
 
 
-    # 9. DOCUMENT FEATURES
+    # document features
 
     document_cols = [
         col for col in df.columns
@@ -242,8 +184,6 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     # Living apartments relative to apartments
     df["LIVING_APARTMENTS_RATIO"] = (df["LIVINGAPARTMENTS_AVG"] /df["APARTMENTS_AVG"].replace(0, np.nan))
 
-
-    # 12. INCOME TYPE / FAMILY INTERACTIONS
 
     # if {"AMT_INCOME_TOTAL","CNT_CHILDREN"}.issubset(df.columns):
     #     df["INCOME_PER_CHILD_ADJUSTED"] = (df["AMT_INCOME_TOTAL"] /(df["CNT_CHILDREN"] + 1))
