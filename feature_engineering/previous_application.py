@@ -1,9 +1,9 @@
 import pandas as pd
-
+import numpy as np
 def previous_apps_features():
     prev_apps = pd.read_csv("../data/previous_application.csv")
 
-    features = prev_apps.groupby("SK_ID_CURR")["SK_ID_PREV"].count()
+    features = prev_apps.groupby("SK_ID_CURR")["SK_ID_PREV"].count().to_frame("PREV_APP_COUNT")
     
     # prev apps status
     status_counts = pd.crosstab(prev_apps["SK_ID_CURR"],prev_apps["NAME_CONTRACT_STATUS"])
@@ -41,7 +41,7 @@ def previous_apps_features():
     ]
 
     features = features.join(numerical_features)
-    prev_apps["CREDIT_APPLICATION_RATIO"] = (prev_apps["AMT_CREDIT"]/ prev_apps["AMT_APPLICATION"].replace(0, pd.NA))
+    prev_apps["CREDIT_APPLICATION_RATIO"] = (prev_apps["AMT_CREDIT"]/ prev_apps["AMT_APPLICATION"].replace(0, np.nan))
 
     ratio_features = (
         prev_apps.groupby("SK_ID_CURR")["CREDIT_APPLICATION_RATIO"]

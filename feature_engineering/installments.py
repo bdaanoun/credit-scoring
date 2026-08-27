@@ -1,11 +1,11 @@
 import pandas as pd
-
+import numpy as np
 def installments_features():
     installments = pd.read_csv("../data/installments_payments.csv")
 
     installments["PAYMENT_DELAY"] = (installments["DAYS_ENTRY_PAYMENT"]- installments["DAYS_INSTALMENT"])
     installments["LATE_PAYMENT"] = (installments["PAYMENT_DELAY"] > 0).astype(int)
-    installments["PAYMENT_RATIO"] = (installments["AMT_PAYMENT"]/ installments["AMT_INSTALMENT"].replace(0, pd.NA))
+    installments["PAYMENT_RATIO"] = (installments["AMT_PAYMENT"]/ installments["AMT_INSTALMENT"].replace(0, np.nan))
     installments["UNDERPAYMENT"] = (installments["AMT_PAYMENT"] < installments["AMT_INSTALMENT"]).astype(int)
 
     features = installments.groupby("SK_ID_CURR").agg(

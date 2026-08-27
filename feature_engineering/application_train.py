@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-def application_features():
-    df = pd.read_csv("../data/application_train.csv")
+def application_features(path = "../data/application_train.csv"):
+    df = pd.read_csv(path)
 
     # DAYS_BIRTH is negative: convert to years
     df["AGE_YEARS"] = (-df["DAYS_BIRTH"]) / 365.25
