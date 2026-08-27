@@ -68,7 +68,7 @@ print("Training completed.")
 
 os.makedirs("../results/model", exist_ok=True)
 
-plot_feature_importance(model,preprocessor, X_train_encoded,"../results/model/feature_importance.png")
+plot_feature_importance(model,preprocessor, X_val_encoded,"../results/model/feature_importance.png")
 
 plot_learning_curve(model,"../results/model/learning_curve.png")
 
