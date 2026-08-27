@@ -4,9 +4,8 @@ import numpy as np
 import pandas as pd
 
 
-def load_and_split_data(path):
-    df = pd.read_csv(path)
-    X = df.drop(columns=["TARGET"])
+def load_and_split_data(df):
+    X = df.drop(columns=["TARGET", "SK_ID_CURR"])
     y = df["TARGET"]
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -256,7 +255,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
         df["ANNUITY_CREDIT_RATIO"] = (df["AMT_ANNUITY"] /df["AMT_CREDIT"].replace(0, np.nan))
 
 
-    # 14. LOG TRANSFORMATIONS
+    # log transformations
 
     # Useful for heavily skewed financial variables.
     log_cols = [
@@ -273,4 +272,4 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 16. CLEAN INFINITE VALUES
     df.replace([np.inf, -np.inf],np.nan,inplace=True)
-    return df     
+    return df

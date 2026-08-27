@@ -23,11 +23,18 @@ X_train, X_val, y_train, y_val = train_test_split(
     stratify=y_train,
     random_state=42
 )
+#---------------------------
+# debug
+categorical_cols = X_train.select_dtypes(include=["object", "category"]).columns
 
-
+for col in categorical_cols:
+    print(f"{col:50} "
+        f"unique={X_train[col].nunique():10}"
+    )
+#---------------------------
 
 preprocessor = make_column_transformer((
-        OneHotEncoder(handle_unknown="ignore"),
+        OneHotEncoder(handle_unknown="ignore", dtype="float32"),
         make_column_selector(dtype_include=["object", "category"])),
     remainder="passthrough"
 )
@@ -35,8 +42,10 @@ preprocessor = make_column_transformer((
 
 X_train_encoded = preprocessor.fit_transform(X_train)
 X_val_encoded = preprocessor.transform(X_val)
-
-
+print("Original:", X_train.shape)
+print("Encoded:", X_train_encoded.shape)
+print("Type:", type(X_train_encoded))
+print("Dtype:", X_train_encoded.dtype)
 
 
 model = XGBClassifier(
@@ -54,17 +63,12 @@ model = XGBClassifier(
 )
 
 
-
 model.fit(X_train_encoded,y_train , eval_set=[(X_train_encoded, y_train), (X_val_encoded, y_val)],verbose=True)
 print("Training completed.")
 
 os.makedirs("../results/model", exist_ok=True)
 
-plot_feature_importance(
-    model,
-    preprocessor,
-    "../results/model/feature_importance.png"
-)
+plot_feature_importance(model,preprocessor, X_val_encoded,"../results/model/feature_importance.png")
 
 plot_learning_curve(model,"../results/model/learning_curve.png")
 

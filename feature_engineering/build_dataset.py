@@ -1,7 +1,7 @@
-from previous_application import previous_apps_features
-from installments import installments_features
-from bureau import bureau_features
-from application_train import application_features
+from feature_engineering.previous_application import previous_apps_features
+from feature_engineering.installments import installments_features
+from feature_engineering.bureau import bureau_features
+from feature_engineering.application_train import application_features
 def build_dataset():
     application = application_features()
     bureau = bureau_features()
