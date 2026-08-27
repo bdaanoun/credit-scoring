@@ -1,6 +1,6 @@
 import os
 
-import joblib
+import numpy as np
 import shap
 import pandas as pd
 import plotly.graph_objects as go
@@ -14,7 +14,7 @@ OUTPUT_DIR = os.path.join(PROJECT_DIR, "results", "clients_outputs")
 
 
 
-def explain_client( model, X, customer_id, id_column="SK_ID_CURR", n_comparison_clients=5):
+def explain_client( model, X, customer_id, id_column="SK_ID_CURR"):
     
     preprocessor = model["preprocessor"]
     classifier = model["model"]
@@ -66,7 +66,7 @@ def explain_client( model, X, customer_id, id_column="SK_ID_CURR", n_comparison_
     # 6. SHAP force plot
     feature_names = [
         name.replace("remainder__", "")
-            .replace("onehot__", "")
+            .replace("onehotencoder__", "")
         for name in preprocessor.get_feature_names_out()
     ]
     
@@ -79,14 +79,16 @@ def explain_client( model, X, customer_id, id_column="SK_ID_CURR", n_comparison_
     )
     
     fig = create_client_visualization(
-        client,
         X,
         score,
         customer_id,
         preprocessor,
         classifier,
         id_column,
-        n_comparison_clients
+        client_transformed,
+        shap_client,
+        feature_names,
+        X_transformed
     )
     
     return score, shap_force_plot, fig
@@ -94,48 +96,73 @@ def explain_client( model, X, customer_id, id_column="SK_ID_CURR", n_comparison_
 
 
 
-def create_client_visualization(client, X, score, customer_id, preprocessor, classifier, id_column="SK_ID_CURR", n_comparison_clients=5):
+def create_client_visualization( X, score, customer_id, preprocessor, classifier, id_column="SK_ID_CURR", client_transformed=None, shap_client=None, feature_names=None, population_transformed=None):
     
     # Comparison clients
     other_clients = X[X[id_column] != customer_id]
 
-    comparison = other_clients.sample(min(n_comparison_clients, len(other_clients)), random_state=42)
+    comparison = other_clients.sample(min(4, len(other_clients)), random_state=42)
     comparison_transformed = preprocessor.transform(comparison)
     comparison_scores = classifier.predict_proba(comparison_transformed)[:, 1]
+    
+    top_feature_indices = np.argsort(np.abs(shap_client))[::-1][:10]
+    top_population_Feature_indices = top_feature_indices[:5]
+
+    
+    #shortn the namess
+    population_titles = [
+        feature_names[index] if len(feature_names[index]) <= 22
+        else f"{feature_names[index][:19]}..."
+        for index in top_population_Feature_indices
+    ]
 
     # Plot layout
+    population_columns = 5
     fig = make_subplots(
-        rows=2,
-        cols=1,
-        specs=[[{"type": "domain"}], [{"type": "xy"}]],
+        rows=3,
+        cols=population_columns,
+        specs=[
+            [{"type": "domain", "colspan": population_columns}] + [None] * (population_columns - 1),
+            [{"type": "xy", "colspan": population_columns}] + [None] * (population_columns - 1),
+            [{"type": "xy"}] * population_columns
+        ],
         subplot_titles=(
             "Client information",
-            "Default probability comparison"
+            "Default probability comparison",
+            *population_titles
         ),
-        vertical_spacing=0.20
+        horizontal_spacing=0.04,
+        vertical_spacing=0.16
     )
 
-    # Client information
-    info_columns = [
-        col for col in client.columns
-        if col != id_column
-    ][:10]
 
-    values = [
-        "Missing" if pd.isna(client.iloc[0][col])
-        else str(client.iloc[0][col])
-        for col in info_columns
-    ]
+    #-----------Plot One
+    # Client information, ranked by transformed-feature SHAP importance.
+    #--------------------------------------------------------
+    colNames = [feature_names[index] for index in top_feature_indices]
+    colValues = [client_transformed[0, index] for index in top_feature_indices]
+    SHAPContributions = [shap_client[index] for index in top_feature_indices]
+    
+    directions = [ "Toward DEFAULT" if contribution > 0    else "Away from DEFAULT"  if contribution < 0   else "No contribution"
+                    for contribution in SHAPContributions ]
+
+
+    values = ["Missing" if pd.isna(value) else str(value) for value in colValues]
+    formatted_contributions = [f"{contribution:+.6f}" for contribution in SHAPContributions]
 
     fig.add_trace(
         go.Table(
-            header=dict(values=["Variable", "Value"]),
-            cells=dict(values=[info_columns, values])
+            header=dict(values=["Feature", "Transformed value", "SHAP contribution", "Direction"]),
+            cells=dict(values=[colNames, values, formatted_contributions, directions])
         ),
         row=1,
         col=1
     )
 
+
+
+
+    #---------plot 2
     # Comparison chart
     labels = [f"Client {cid}" for cid in comparison[id_column]]
     labels.insert(0, f"Client {customer_id}")
@@ -153,6 +180,52 @@ def create_client_visualization(client, X, score, customer_id, preprocessor, cla
         col=1
     )
 
+
+
+    #----------- plot 3
+    # Compare the client's most important transformed features with the population.
+    if population_transformed is None:
+        population_transformed = preprocessor.transform(X)
+    for panel_index, feature_index in enumerate(top_population_Feature_indices, start=1):
+        population_values = population_transformed[:, feature_index]
+        if hasattr(population_values, "toarray"):
+            population_values = population_values.toarray().ravel()
+        else:
+            population_values = np.asarray(population_values).ravel()
+
+        client_value = client_transformed[0, feature_index]
+        if hasattr(client_value, "toarray"):
+            client_value = client_value.toarray().ravel()[0]
+
+        feature_name = feature_names[feature_index]
+        fig.add_trace(
+            go.Box(
+                y=population_values,
+                name=feature_name,
+                boxpoints=False,
+                marker_color="#9aa7b8",
+                line_color="#536273",
+                showlegend=False,
+                hovertemplate="Population: %{y}<extra></extra>"
+            ),
+            row=3,
+            col=panel_index
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=[feature_name],
+                y=[client_value],
+                mode="markers",
+                name="Selected client",
+                marker=dict(color="#d1495b", size=10, symbol="diamond"),
+                showlegend=panel_index == 1,
+                hovertemplate="Selected client: %{y}<extra></extra>"
+            ),
+            row=3,
+            col=panel_index
+        )
+        fig.update_xaxes(showticklabels=False, row=3, col=panel_index)
+
     fig.update_yaxes(
         title_text="Probability of default",
         tickformat=".0%",
@@ -162,8 +235,8 @@ def create_client_visualization(client, X, score, customer_id, preprocessor, cla
 
     fig.update_layout(
         title=f"Local interpretation — Customer {customer_id}",
-        height=800,
-        showlegend=False
+        height=1100,
+        showlegend=True
     )
 
     return fig
@@ -172,14 +245,14 @@ def create_client_visualization(client, X, score, customer_id, preprocessor, cla
 
 
 def save_client_outputs(client, X, y, model_data):
+    
+    
     customer_id = client["id"]
     split = client["split"]
     description = client["description"]
+    
     client_output_dir = os.path.join(OUTPUT_DIR, f"client_{customer_id}")
     os.makedirs(client_output_dir, exist_ok=True)
-
-    if customer_id not in set(X["SK_ID_CURR"]):
-        raise ValueError(f"Customer {customer_id} was not found in the {split} set.")
 
     score, shap_force_plot, plotly_fig = explain_client(
         model=model_data,
@@ -187,8 +260,9 @@ def save_client_outputs(client, X, y, model_data):
         customer_id=customer_id,
     )
 
-    actual_target = None if y is None else int(y.loc[X["SK_ID_CURR"] == customer_id].iloc[0])
+    actual_target = y.loc[X["SK_ID_CURR"] == customer_id].iloc[0]
     predicted_target = int(score >= 0.5)
+    
     result = "unknown" if actual_target is None else (
         "correct" if predicted_target == actual_target else "wrong"
     )
