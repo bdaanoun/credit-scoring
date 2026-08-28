@@ -1,9 +1,10 @@
+import sys
+sys.path.append("..")
 import joblib
 import pandas as pd
 
-from sklearn.metrics import roc_auc_score, classification_report
-
-from helpers import add_features, handle_missing_values
+from sklearn.metrics import roc_auc_score
+from feature_engineering.build_dataset import build_dataset
 
 
 model_data = joblib.load("../results/model/xgboost.pkl")
@@ -16,11 +17,9 @@ print("Model and preprocessor loaded.")
 
 X_test = pd.read_csv("../data/X_test_processed.csv")
 y_test = pd.read_csv("../data/y_test.csv").squeeze()
-
 print(f"X_test shape: {X_test.shape}")
 
-
-# 3. Predict
+# Predict
 X_test_encoded = preprocessor.transform(X_test)
 y_pred = model.predict(X_test_encoded)
 y_pred_proba = model.predict_proba(X_test_encoded)[:, 1]
@@ -38,26 +37,16 @@ print(f"ROC AUC: {roc_auc:.4f}")
 
 
 # Load Kaggle test data
-test_df = pd.read_csv("../data/application_test.csv")
-ids = test_df["SK_ID_CURR"]
-# X_kaggle = test_df.drop(columns=["SK_ID_CURR"])
-X_kaggle = test_df.copy()
+test_df = build_dataset("../data/application_test.csv")
+print(f"test dataset shape: {test_df.shape}")
 
-train_df = pd.read_csv("../data/application_train.csv")
-X_train = train_df.drop(columns=["TARGET"])
-
-
-
-# Feature engineering
-X_train = add_features(X_train)
-X_kaggle = add_features(X_kaggle)
-X_train, X_kaggle = handle_missing_values(X_train,X_kaggle)
-print("\nKaggle test data prepared.")
+ids = test_df["SK_ID_CURR"].copy()
+X_kaggle = test_df.drop(columns=["SK_ID_CURR"])
 
 
 # transform and predict
-X_kaggle = preprocessor.transform(X_kaggle)
-predictions = model.predict_proba(X_kaggle)[:, 1]
+X_kaggle_enc = preprocessor.transform(X_kaggle)
+predictions = model.predict_proba(X_kaggle_enc)[:, 1]
 
 
 # Create Kaggle submission

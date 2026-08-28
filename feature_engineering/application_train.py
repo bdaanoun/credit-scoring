@@ -3,6 +3,7 @@ import numpy as np
 
 def application_features(path = "../data/application_train.csv"):
     df = pd.read_csv(path)
+    df = df.copy()
 
     # DAYS_BIRTH is negative: convert to years
     df["AGE_YEARS"] = (-df["DAYS_BIRTH"]) / 365.25
@@ -142,41 +143,6 @@ def application_features(path = "../data/application_train.csv"):
             df["CAR_AGE_TO_PERSON_AGE"] = (df["OWN_CAR_AGE"] / df["AGE_YEARS"].replace(0, np.nan))
 
 
-    # 11. REAL ESTATE / PROPERTY FEATURES
-
-    # These columns describe different aspects of the building/property.
-    building_avg_cols = [
-        col for col in [
-            "APARTMENTS_AVG",
-            "BASEMENTAREA_AVG",
-            "YEARS_BEGINEXPLUATATION_AVG",
-            "YEARS_BUILD_AVG",
-            "COMMONAREA_AVG",
-            "ELEVATORS_AVG",
-            "ENTRANCES_AVG",
-            "FLOORSMAX_AVG",
-            "FLOORSMIN_AVG",
-            "LANDAREA_AVG",
-            "LIVINGAPARTMENTS_AVG",
-            "LIVINGAREA_AVG",
-            "NONLIVINGAPARTMENTS_AVG",
-            "NONLIVINGAREA_AVG",
-            "TOTALAREA_MODE",
-        ]
-        if col in df.columns
-    ]
-
-    # if building_avg_cols:
-
-    #     df["BUILDING_AVG_MEAN"] = (
-    #         df[building_avg_cols].mean(axis=1)
-    #     )
-
-    #     df["BUILDING_AVG_MISSING_COUNT"] = (
-    #         df[building_avg_cols].isna().sum(axis=1)
-    #     )
-
-
     # Living area relative to total area
     df["LIVING_TO_TOTAL_AREA"] = (df["LIVINGAREA_AVG"] /df["TOTALAREA_MODE"].replace(0, np.nan))
 
@@ -185,18 +151,13 @@ def application_features(path = "../data/application_train.csv"):
     df["LIVING_APARTMENTS_RATIO"] = (df["LIVINGAPARTMENTS_AVG"] /df["APARTMENTS_AVG"].replace(0, np.nan))
 
 
-    # if {"AMT_INCOME_TOTAL","CNT_CHILDREN"}.issubset(df.columns):
-    #     df["INCOME_PER_CHILD_ADJUSTED"] = (df["AMT_INCOME_TOTAL"] /(df["CNT_CHILDREN"] + 1))
-
-
-    # 13. LOAN / ANNUITY FEATURES
-
+    # loan / annuity features
     if {"AMT_ANNUITY","AMT_CREDIT"}.issubset(df.columns):
         # Monthly payment as fraction of loan
         df["ANNUITY_CREDIT_RATIO"] = (df["AMT_ANNUITY"] /df["AMT_CREDIT"].replace(0, np.nan))
 
 
-    # 14. LOG TRANSFORMATIONS
+    # log transformations
 
     # Useful for heavily skewed financial variables.
     log_cols = [
@@ -211,6 +172,6 @@ def application_features(path = "../data/application_train.csv"):
             df[f"{col}_LOG"] = np.log1p(df[col].clip(lower=0))
 
 
-    # 16. CLEAN INFINITE VALUES
+    # clean infinite values
     df.replace([np.inf, -np.inf],np.nan,inplace=True)
     return df     

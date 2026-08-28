@@ -3,6 +3,7 @@ import os
 import joblib
 import pandas as pd
 from one_client import save_client_outputs
+from helpers import add_features, handle_missing_values, load_and_split_data
 
 
 # Add or remove entries here to choose which clients to explain.
@@ -13,28 +14,15 @@ CLIENTS = [
 ]
 
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(PROJECT_DIR, "results", "model", "xgboost.pkl")
-OUTPUT_DIR = os.path.join(PROJECT_DIR, "results", "clients_outputs")
 
-
-
-
-model_data = joblib.load(MODEL_PATH)
+model_data = joblib.load("../results/model/xgboost.pkl")
 print("Model loaded.")
 
-datasets = {}
-for split in {client["split"] for client in CLIENTS}:
-    X_path = os.path.join(PROJECT_DIR, "data", f"X_{split}_processed.csv")
-    y_path = os.path.join(PROJECT_DIR, "data", f"y_{split}.csv")
-    X = pd.read_csv(X_path)
-    y = pd.read_csv(y_path).squeeze("columns")
-    datasets[split] = (X, y)
-    print(f"{split.capitalize()} data loaded: {X.shape}")
+X_train, X_test, y_train, y_test = load_and_split_data("../data/application_train.csv")
+X_train = add_features(X_train)
+X_test = add_features(X_test)
+X_train, X_test = handle_missing_values(X_train, X_test)
 
-
-for client in CLIENTS:
-    X, y = datasets[client["split"]]
-    save_client_outputs(client, X, y, model_data)
-
-
+save_client_outputs(CLIENTS[0], X_train, y_train, model_data)
+save_client_outputs(CLIENTS[1], X_train, y_train, model_data)
+save_client_outputs(CLIENTS[2], X_test, y_test, model_data)
