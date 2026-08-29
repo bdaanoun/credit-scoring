@@ -33,8 +33,6 @@ def explain_client( model, X, customer_id, id_column="SK_ID_CURR"):
     
     # 3. Prediction
     score = classifier.predict_proba(client_transformed)[0, 1]
-    print(f"Customer ID : {customer_id}")
-    print(f"Default probability : {score:.2%}")
 
 
     # prepare the features for SHAP explanation
@@ -260,9 +258,19 @@ def save_client_outputs(client, X, y, model_data):
         customer_id=customer_id,
     )
 
-    actual_target = y.loc[X["SK_ID_CURR"] == customer_id].iloc[0]
+    actual_target_raw = y.loc[X["SK_ID_CURR"] == customer_id]
+    if isinstance(actual_target_raw, pd.DataFrame):
+        actual_target = actual_target_raw.squeeze()
+        if isinstance(actual_target, pd.Series):
+            actual_target = actual_target.iloc[0]
+    elif isinstance(actual_target_raw, pd.Series):
+        actual_target = actual_target_raw.iloc[0]
+    else:
+        actual_target = actual_target_raw
+
+    actual_target = int(actual_target) if pd.notna(actual_target) else None
     predicted_target = int(score >= 0.5)
-    
+
     result = "unknown" if actual_target is None else (
         "correct" if predicted_target == actual_target else "wrong"
     )

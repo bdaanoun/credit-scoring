@@ -11,7 +11,7 @@ from feature_importance import plot_feature_importance
 
 X_train = pd.read_csv("../data/X_train_processed.csv")
 y_train = pd.read_csv("../data/y_train.csv").squeeze()
-
+X_train =  X_train.drop(columns=['SK_ID_CURR'])
 print(f"X_train shape: {X_train.shape}")
 
 
@@ -56,8 +56,9 @@ model = XGBClassifier(
     colsample_bytree=0.8,
     objective="binary:logistic",
     eval_metric="auc",
-    early_stopping_rounds=50,
+    early_stopping_rounds=30,
     random_state=42,
+    scale_pos_weight = 9,
     n_jobs=-1
 )
 

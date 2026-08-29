@@ -1,0 +1,7 @@
+Client ID: 242055
+Split: train
+Description: train_wrong
+Default probability: 20.45%
+Predicted target (threshold 0.5): 0
+Actual target: 1
+Prediction: wrong

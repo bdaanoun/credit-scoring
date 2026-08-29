@@ -16,6 +16,7 @@ print("Model and preprocessor loaded.")
 
 
 X_test = pd.read_csv("../data/X_test_processed.csv")
+X_test= X_test.drop(columns=["SK_ID_CURR"])
 y_test = pd.read_csv("../data/y_test.csv").squeeze()
 print(f"X_test shape: {X_test.shape}")
 

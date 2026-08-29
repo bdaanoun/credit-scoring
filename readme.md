@@ -108,13 +108,8 @@ Prints ROC-AUC on the test set and writes `results/prediction.csv` (Kaggle submi
 python predict.py
 ```
 
-### 4 — (Optional) Explain a single client
 
-```bash
-python one_client.py
-```
-
-### 5 — (Optional) Explain all clients
+### 4 —  Explain all clients
 
 ```bash
 python explain_all_clients.py
