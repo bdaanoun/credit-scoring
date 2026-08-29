@@ -61,18 +61,6 @@ def plot_learning_curve(model, output_path):
     print(f"Learning curve saved to: {output_path}")
     print(f"Best iteration: {best_iteration + 1}")
     print(f"Best validation AUC: {best_auc:.4f}")
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 def learning_curve_asDataGrows(model, X, y, output_path):
 

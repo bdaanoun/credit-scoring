@@ -11,7 +11,7 @@ from feature_importance import plot_feature_importance
 
 X_train = pd.read_csv("../data/X_train_processed.csv")
 y_train = pd.read_csv("../data/y_train.csv").squeeze()
-X_train =  X_train.drop(columns=['SK_ID_CURR'])
+X_train = X_train.drop(columns="SK_ID_CURR")
 print(f"X_train shape: {X_train.shape}")
 
 
@@ -22,15 +22,6 @@ X_train, X_val, y_train, y_val = train_test_split(
     stratify=y_train,
     random_state=42
 )
-#---------------------------
-# debug
-categorical_cols = X_train.select_dtypes(include=["object", "category"]).columns
-
-for col in categorical_cols:
-    print(f"{col:50} "
-        f"unique={X_train[col].nunique():10}"
-    )
-#---------------------------
 
 preprocessor = make_column_transformer((
         OneHotEncoder(handle_unknown="ignore", dtype="float32"),
