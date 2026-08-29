@@ -24,7 +24,6 @@ X_test_encoded = preprocessor.transform(X_test)
 y_pred = model.predict(X_test_encoded)
 y_pred_proba = model.predict_proba(X_test_encoded)[:, 1]
 
-
 # 4. Evaluate
 roc_auc = roc_auc_score(y_test,y_pred_proba)
 

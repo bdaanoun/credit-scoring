@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def load_and_split_data(df):
-    X = df.drop(columns=["TARGET", "SK_ID_CURR"])
+    X = df.drop(columns=["TARGET"])
     y = df["TARGET"]
     X_train, X_test, y_train, y_test = train_test_split(
         X,
